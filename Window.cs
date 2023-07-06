@@ -27,7 +27,8 @@ public static class Window
 		for (int i = entries.Length - 1; i >= 0; i--) 
 		{
 			getProperties(entries[i], out byte[] content, out bool isImage, out bool isPinned, out string filename);
-			box.PackStart(new Entry(content, isImage, isPinned), false, false, 0);
+			Entry entry = new Entry(content, isImage, isPinned, filename);
+			box.PackStart(entry.Widget, false, false, 0);
 		}
 
 		if (entries.Length == 0) 

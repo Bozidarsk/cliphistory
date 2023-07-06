@@ -2,60 +2,52 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
-using System.Net.Http;
 using System.Text;
 using System.IO;
 using Gtk;
 
-public sealed class Entry : ImageMenuItem
+public sealed class Entry 
 {
 	public byte[] Content { private set; get; }
 	public bool IsImage { private set; get; }
 	public bool IsPinned { private set; get; }
+	public Widget Widget { private set; get; }
 
-	public Entry(byte[] content, bool isImage, bool isPinned) : base()
+	// 󰐃󰤱
+	public Entry(byte[] content, bool isImage, bool isPinned, string filename) 
 	{
 		this.Content = content;
 		this.IsImage = isImage;
 		this.IsPinned = isPinned;
 
-		// 󰐃󰤱
-		if (!isImage) { base.Label = Encoding.UTF8.GetString(this.Content); }
+		if (!isImage) 
+		{
+			this.Widget = new EventBox();
+			((EventBox)this.Widget).Add(new Label(Encoding.UTF8.GetString(content)));
+			// this.Widget = new ImageMenuItem();
+			// ((ImageMenuItem)this.Widget).Label = Encoding.UTF8.GetString(content);
+		}
 		else 
 		{
-			base.Label = "BINARY PNG IMAGE";
-			// new Thread(new ThreadStart(() => 
-			// {
-			// 	int start = content.IndexOf("src=\"");
-			// 	string uri = content.Substring(
-			// 		start + 5,
-			// 		Math.Min(content.IndexOf("\"", start + 6), content.IndexOf("?", start + 6)) - start - 5
-			// 	);
-
-			// 	base.Label = this.Content;
-			// 	Stream stream = new HttpClient(new HttpClientHandler()).GetStreamAsync(uri).Result;
-
-			// 	List<byte> bytes = new List<byte>();
-			// 	for (int b = stream.ReadByte(); b != -1; b = stream.ReadByte()) { bytes.Add((byte)b); }
-			// 	this.Bytes = bytes.ToArray();
-
-			// 	base.AlwaysShowImage = true;
-			// 	// base.Image = new Image(stream);
-			// 	Console.WriteLine(base.AllocatedWidth);
-			// 	Console.WriteLine(base.AllocatedHeight);
-			// })).Start();
+			this.Widget = new EventBox();
+			((EventBox)this.Widget).Add(new Image(Path.TmpDir + filename));
+			// this.Widget = new Image(Path.TmpDir + filename);
 		}
 
-		base.Name = "entry";
-		base.CanFocus = true;
+		this.Widget.Name = "entry";
+		this.Widget.CanFocus = true;
+		this.Widget.HeightRequest = 64;
+		// this.Widget.Halign = Align.Start;
+		// this.Widget.Valign = Align.Center;
+		// this.Widget.Hexpand = true;
+		// this.Widget.HexpandSet = true;
 
 		MenuItem menuPin = new MenuItem("Pin");
-		menuPin.Activated += (object sender, EventArgs e) => { this.IsPinned = !this.IsPinned; menuPin.Label = (this.IsPinned) ? "Unpin" : "Pin"; Program.Pin(this.Content, this.IsImage, this.IsPinned); };
-		menuPin.FocusHadjustment = new Adjustment(0, 0, 0, 0, 0, 0);
+		menuPin.Activated += (object sender, EventArgs e) => { this.IsPinned = !this.IsPinned; menuPin.Label = (this.IsPinned) ? "Unpin" : "Pin"; Program.Pin(this); };
 		menuPin.Name = "pin";
 
 		MenuItem menuDelete = new MenuItem("Delete");
-		menuDelete.Activated += (object sender, EventArgs e) => { Program.Delete(this.Content, this.IsImage, this.IsPinned); base.Destroy(); };
+		menuDelete.Activated += (object sender, EventArgs e) => { Program.Delete(this); this.Widget.Destroy(); };
 		menuDelete.Name = "delete";
 
 		MenuItem menuClear = new MenuItem("Clear");
@@ -64,23 +56,23 @@ public sealed class Entry : ImageMenuItem
 
 		Menu menu = new Menu();
 		menu.Name = "menu";
-		menu.AttachToWidget(this, null);
+		menu.AttachToWidget(this.Widget, null);
 		menu.Add(menuPin);
 		menu.Add(menuDelete);
 		menu.Add(new SeparatorMenuItem());
 		menu.Add(menuClear);
 		menu.ShowAll();
 
-		base.KeyPressEvent += (object sender, KeyPressEventArgs e) => 
+		this.Widget.KeyPressEvent += (object sender, KeyPressEventArgs e) => 
 		{
 			if (e.Event.Key == Gdk.Key.Escape) { Application.Quit(); }
 			if (e.Event.Key == Gdk.Key.Return || e.Event.Key == Gdk.Key.KP_Enter) { Program.Selected(this); Application.Quit(); }
 			if (e.Event.Key == Gdk.Key.Menu) { menu.Popup(null, null, null, 3, e.Event.Time); }
 		};
 
-		base.ButtonPressEvent += (object sender, ButtonPressEventArgs e) => 
+		this.Widget.ButtonPressEvent += (object sender, ButtonPressEventArgs e) => 
 		{
-			base.GrabFocus();
+			this.Widget.GrabFocus();
 			if (e.Event.Button == 1) { Program.Selected(this); Application.Quit(); }
 			if (e.Event.Button == 3) { menu.Popup(null, null, null, 3, e.Event.Time); }
 		};

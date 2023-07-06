@@ -1,8 +1,6 @@
-using System;
-
 public static class Path 
 {
-	public static readonly string Home = Environment.GetEnvironmentVariable("HOME");
+	private static readonly string Home = System.Environment.GetEnvironmentVariable("HOME");
 	public static readonly string Css = Path.Home + "/.config/cliphistory/style.css";
 	public static readonly string Selected = "/tmp/cliphistoryselectedentry";
 	public static readonly string Tmp = "/tmp/cliphistory/entries";

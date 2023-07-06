@@ -40,6 +40,7 @@ public static class Program
 		File.WriteAllBytes(Path.TmpDir + filename, content);
 	}
 
+	public static void Pin(Entry entry) { Pin(entry.Content, entry.IsImage, entry.IsPinned); }
 	public static void Pin(byte[] content, bool isImage, bool newIsPinned) 
 	{
 		List<string> lines = File.ReadAllText(Path.Tmp).Split('\n').ToList();
@@ -71,6 +72,7 @@ public static class Program
 		if (file == "" && File.Exists(Path.Pinned)) { File.Delete(Path.Pinned); }
 	}
 
+	public static void Delete(Entry entry) { Delete(entry.Content, entry.IsImage, entry.IsPinned); }
 	public static void Delete(byte[] content, bool isImage, bool isPinned) 
 	{
 		DeleteLine(Path.Tmp, Path.TmpDir, content, isImage, isPinned);
@@ -90,9 +92,6 @@ public static class Program
 			{
 				File.Delete(pathDir + filename);
 				continue;
-				// if (isPinned) { File.Delete(Path.PinnedDir + filename); }
-
-				// lines.RemoveAt(i--);
 			}
 
 			file += "\n" + lines[i];
