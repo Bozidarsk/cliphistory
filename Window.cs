@@ -9,20 +9,15 @@ public static class Window
 	{
 		Application.Init();
 
-		Gtk.Window window = new Gtk.Window("");
-		window.SetDefaultSize(400, 450);
-
 		CssProvider provider = new CssProvider();
 		provider.LoadFromData(System.IO.File.ReadAllText(Path.Css));
 		StyleContext.AddProviderForScreen(Gdk.Screen.Default, provider, 800);
 
 		VBox box = new VBox();
-		Viewport view = new Viewport();
-		ScrolledWindow scroll = new ScrolledWindow();
-		view.Add(box);
-		scroll.Add(view);
-		scroll.Name = "scroll";
 		box.Name = "box";
+
+		ScrolledWindow scroll = new ScrolledWindow();
+		scroll.Add(box);
 
 		for (int i = entries.Length - 1; i >= 0; i--) 
 		{
@@ -39,10 +34,12 @@ public static class Window
 			box.Children[1].Name = "empty-text";
 		}
 
-		window.FocusOutEvent += (object sender, FocusOutEventArgs e) => { Application.Quit(); };
+		Gtk.Window window = new Gtk.Window("");
 		window.Resizable = false;
 		window.KeepAbove = true;
 		window.TypeHint = Gdk.WindowTypeHint.Menu;
+		window.FocusOutEvent += (object sender, FocusOutEventArgs e) => { Application.Quit(); };
+		window.SetDefaultSize(400, 450);
 		window.Add(scroll);
 		window.ShowAll();
 

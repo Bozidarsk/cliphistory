@@ -1,9 +1,7 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
 using System.Text;
-using System.IO;
+using System.Reflection;
+using System.Linq;
 using Gtk;
 
 public sealed class Entry 
@@ -11,7 +9,7 @@ public sealed class Entry
 	public byte[] Content { private set; get; }
 	public bool IsImage { private set; get; }
 	public bool IsPinned { private set; get; }
-	public Widget Widget { private set; get; }
+	public EventBox Widget { private set; get; }
 
 	// 󰐃󰤱
 	public Entry(byte[] content, bool isImage, bool isPinned, string filename) 
@@ -19,28 +17,43 @@ public sealed class Entry
 		this.Content = content;
 		this.IsImage = isImage;
 		this.IsPinned = isPinned;
-
-		if (!isImage) 
-		{
-			this.Widget = new EventBox();
-			((EventBox)this.Widget).Add(new Label(Encoding.UTF8.GetString(content)));
-			// this.Widget = new ImageMenuItem();
-			// ((ImageMenuItem)this.Widget).Label = Encoding.UTF8.GetString(content);
-		}
-		else 
-		{
-			this.Widget = new EventBox();
-			((EventBox)this.Widget).Add(new Image(Path.TmpDir + filename));
-			// this.Widget = new Image(Path.TmpDir + filename);
-		}
+		this.Widget = new EventBox();
 
 		this.Widget.Name = "entry";
 		this.Widget.CanFocus = true;
-		this.Widget.HeightRequest = 64;
+		this.Widget.HeightRequest = 48;
 		// this.Widget.Halign = Align.Start;
 		// this.Widget.Valign = Align.Center;
 		// this.Widget.Hexpand = true;
+		// this.Widget.Vexpand = true;
 		// this.Widget.HexpandSet = true;
+		// this.Widget.VexpandSet = true;
+
+		if (!isImage) 
+		{
+			Label label = new Label(Encoding.UTF8.GetString(content));
+			label.Ellipsize = Pango.EllipsizeMode.End;
+			label.Wrap = false;
+			label.Name = "text";
+
+			this.Widget.Add(label);
+		}
+		else 
+		{
+			// Gdk.Pixbuf buffer = new Gdk.Pixbuf(Path.TmpDir + filename);
+			// buffer.ScaleSimple(
+			// 	64,
+			// 	64,
+			// 	Gdk.InterpType.Bilinear
+			// );
+
+			// Image image = new Image(buffer);
+
+			Image image = new Image(Path.TmpDir + filename);
+			image.Name = "image";
+
+			this.Widget.Add(image);
+		}
 
 		MenuItem menuPin = new MenuItem("Pin");
 		menuPin.Activated += (object sender, EventArgs e) => { this.IsPinned = !this.IsPinned; menuPin.Label = (this.IsPinned) ? "Unpin" : "Pin"; Program.Pin(this); };

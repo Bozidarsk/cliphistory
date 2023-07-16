@@ -33,8 +33,6 @@ public static class Program
 			return;
 		}
 
-		// string file = File.ReadAllText(Path.Tmp);
-		// if (file.Contains(line)) { return; }
 		if (File.Exists(Path.TmpDir + filename)) { return; }
 		File.WriteAllText(Path.Tmp, File.ReadAllText(Path.Tmp) + "\n" + line);
 		File.WriteAllBytes(Path.TmpDir + filename, content);
@@ -120,7 +118,6 @@ public static class Program
 		string file = Encoding.UTF8.GetString(content).GetHashCode().ToString() + Path.EntryExtension;
 		string line = ((isImage) ? 1 : 0).ToString() + ((isPinned) ? 1 : 0).ToString() + " " + file;
 		filename = file;
-		// File.WriteAllBytes(Path.TmpDir + file, content);
 		return line;
 	}
 
