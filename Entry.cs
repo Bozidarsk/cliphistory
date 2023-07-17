@@ -21,7 +21,7 @@ public sealed class Entry
 
 		this.Widget.Name = "entry";
 		this.Widget.CanFocus = true;
-		this.Widget.HeightRequest = 48;
+		this.Widget.HeightRequest = Config.MinHeight;
 		// this.Widget.Halign = Align.Start;
 		// this.Widget.Valign = Align.Center;
 		// this.Widget.Hexpand = true;
@@ -29,7 +29,7 @@ public sealed class Entry
 		// this.Widget.HexpandSet = true;
 		// this.Widget.VexpandSet = true;
 
-		if (!isImage) 
+		if (!this.IsImage) 
 		{
 			Label label = new Label(Encoding.UTF8.GetString(content));
 			label.Ellipsize = Pango.EllipsizeMode.End;
@@ -40,7 +40,7 @@ public sealed class Entry
 		}
 		else 
 		{
-			// Gdk.Pixbuf buffer = new Gdk.Pixbuf(Path.TmpDir + filename);
+			// Gdk.Pixbuf buffer = new Gdk.Pixbuf(Config.PathTmpDir + filename);
 			// buffer.ScaleSimple(
 			// 	64,
 			// 	64,
@@ -49,13 +49,13 @@ public sealed class Entry
 
 			// Image image = new Image(buffer);
 
-			Image image = new Image(Path.TmpDir + filename);
+			Image image = new Image(Config.PathTmpDir + filename);
 			image.Name = "image";
 
 			this.Widget.Add(image);
 		}
 
-		MenuItem menuPin = new MenuItem("Pin");
+		MenuItem menuPin = new MenuItem((this.IsPinned) ? "Unpin" : "Pin");
 		menuPin.Activated += (object sender, EventArgs e) => { this.IsPinned = !this.IsPinned; menuPin.Label = (this.IsPinned) ? "Unpin" : "Pin"; Program.Pin(this); };
 		menuPin.Name = "pin";
 
@@ -64,7 +64,7 @@ public sealed class Entry
 		menuDelete.Name = "delete";
 
 		MenuItem menuClear = new MenuItem("Clear");
-		menuClear.Activated += (object sender, EventArgs e) => { Program.Clear(); };
+		menuClear.Activated += (object sender, EventArgs e) => { Program.Clear(); Application.Quit(); };
 		menuClear.Name = "clear";
 
 		Menu menu = new Menu();

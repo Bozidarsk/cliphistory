@@ -12,10 +12,10 @@ public static class Program
 	{
 		if (entry.IsImage) 
 		{
-			File.WriteAllBytes(Path.Selected, entry.Content);
+			File.WriteAllBytes("/tmp/cliphistoryselectedimage", entry.Content);
 			Process.Start(
 				Environment.GetEnvironmentVariable("SHELL"),
-				"-c \"cat " + Path.Selected + " | wl-copy\""
+				"-c \"cat /tmp/cliphistoryselectedimage | wl-copy\""
 			);
 		}
 		else { Process.Start("wl-copy", Encoding.UTF8.GetString(entry.Content)); }
@@ -26,26 +26,26 @@ public static class Program
 	{
 		string line = ConstructLine(content, isImage, false, out string filename);
 
-		if (!File.Exists(Path.Tmp)) 
+		if (!File.Exists(Config.PathTmpDir + "/entries")) 
 		{
-			File.WriteAllText(Path.Tmp, line);
-			File.WriteAllBytes(Path.TmpDir + filename, content);
+			File.WriteAllText(Config.PathTmpDir + "/entries", line);
+			File.WriteAllBytes(Config.PathTmpDir + filename, content);
 			return;
 		}
 
-		if (File.Exists(Path.TmpDir + filename)) { return; }
-		File.WriteAllText(Path.Tmp, File.ReadAllText(Path.Tmp) + "\n" + line);
-		File.WriteAllBytes(Path.TmpDir + filename, content);
+		if (File.Exists(Config.PathTmpDir + filename)) { return; }
+		File.WriteAllText(Config.PathTmpDir + "/entries", File.ReadAllText(Config.PathTmpDir + "/entries") + "\n" + line);
+		File.WriteAllBytes(Config.PathTmpDir + filename, content);
 	}
 
 	public static void Pin(Entry entry) { Pin(entry.Content, entry.IsImage, entry.IsPinned); }
 	public static void Pin(byte[] content, bool isImage, bool newIsPinned) 
 	{
-		List<string> lines = File.ReadAllText(Path.Tmp).Split('\n').ToList();
+		List<string> lines = File.ReadAllText(Config.PathTmpDir + "/entries").Split('\n').ToList();
 		List<string> pinnedLines = new List<string>();
 		string dump, file = "";
 
-		Directory.GetFiles(Path.PinnedDir, "*" + Path.EntryExtension).ToList().ForEach(x => File.Delete(x));
+		Directory.GetFiles(Config.PathPinnedDir, "*.entry").ToList().ForEach(x => File.Delete(x));
 
 		for (int i = 0; i < lines.Count; i++) 
 		{
@@ -56,25 +56,25 @@ public static class Program
 			if (_isPinned) 
 			{
 				pinnedLines.Add(lines[i]);
-				File.WriteAllBytes(Path.PinnedDir + _filename, _content);
+				File.WriteAllBytes(Config.PathPinnedDir + _filename, _content);
 			}
 
 			file += "\n" + lines[i];
 		}
 
-		File.WriteAllText(Path.Tmp, file.Remove(0, 1));
+		File.WriteAllText(Config.PathTmpDir + "/entries", file.Remove(0, 1));
 
 		file = "";
 		for (int i = 0; i < pinnedLines.Count; i++) { file += "\n" + pinnedLines[i]; }
-		if (file != "") { File.WriteAllText(Path.Pinned, file.Remove(0, 1)); }
-		if (file == "" && File.Exists(Path.Pinned)) { File.Delete(Path.Pinned); }
+		if (file != "") { File.WriteAllText(Config.PathPinnedDir + "/entries", file.Remove(0, 1)); }
+		if (file == "" && File.Exists(Config.PathPinnedDir + "/entries")) { File.Delete(Config.PathPinnedDir + "/entries"); }
 	}
 
 	public static void Delete(Entry entry) { Delete(entry.Content, entry.IsImage, entry.IsPinned); }
 	public static void Delete(byte[] content, bool isImage, bool isPinned) 
 	{
-		DeleteLine(Path.Tmp, Path.TmpDir, content, isImage, isPinned);
-		if (isPinned) { DeleteLine(Path.Pinned, Path.PinnedDir, content, isImage, isPinned); }
+		DeleteLine(Config.PathTmpDir + "/entries", Config.PathTmpDir, content, isImage, isPinned);
+		if (isPinned) { DeleteLine(Config.PathPinnedDir + "/entries", Config.PathPinnedDir, content, isImage, isPinned); }
 	}
 
 	private static void DeleteLine(string path, string pathDir, byte[] content, bool isImage, bool isPinned) 
@@ -101,21 +101,13 @@ public static class Program
 
 	public static void Clear() 
 	{
-		Directory.GetFiles(Path.TmpDir, "*" + Path.EntryExtension).ToList().ForEach(x => File.Delete(x));
-		if (File.Exists(Path.Pinned)) 
-		{
-			Directory.GetFiles(Path.PinnedDir, "*" + Path.EntryExtension).ToList().ForEach(x => 
-				{
-					File.WriteAllBytes(x.Remove(0, x.LastIndexOf("/") + 1), File.ReadAllBytes(x));
-				}
-			);
-			File.WriteAllText(Path.Tmp, File.ReadAllText(Path.Pinned));
-		} else { File.Delete(Path.Tmp); }
+		Directory.GetFiles(Config.PathTmpDir, "*").ToList().ForEach(x => File.Delete(x));
+		Directory.GetFiles(Config.PathPinnedDir, "*").ToList().ForEach(x => File.Copy(x, x.Replace(Config.PathPinnedDir, Config.PathTmpDir)));
 	}
 
 	private static string ConstructLine(byte[] content, bool isImage, bool isPinned, out string filename) 
 	{
-		string file = Encoding.UTF8.GetString(content).GetHashCode().ToString() + Path.EntryExtension;
+		string file = Encoding.UTF8.GetString(content).GetHashCode().ToString() + ".entry";
 		string line = ((isImage) ? 1 : 0).ToString() + ((isPinned) ? 1 : 0).ToString() + " " + file;
 		filename = file;
 		return line;
@@ -126,15 +118,21 @@ public static class Program
 		string file = line.Remove(0, 3);
 		isImage = line[0] == '1';
 		isPinned = line[1] == '1';
-		content = File.ReadAllBytes(Path.TmpDir + file);
+		content = File.ReadAllBytes(Config.PathTmpDir + file);
 		filename = file;
 	}
 
 	private static int Main(string[] args) 
 	{
-		if (!Directory.Exists(Path.TmpDir)) { Directory.CreateDirectory(Path.TmpDir); }
-		if (!Directory.Exists(Path.PinnedDir)) { Directory.CreateDirectory(Path.PinnedDir); }
-		if (!File.Exists(Path.Tmp) && File.Exists(Path.Pinned)) { File.WriteAllText(Path.Tmp, File.ReadAllText(Path.Pinned)); }
+		int index = Array.IndexOf(args, "--config-dir");
+		if (index == args.Length - 1) { Console.WriteLine("Invalid options."); return 1; }
+		if (index >= 0) { Config.Initialize(args[index + 1]); }
+		else { Config.Initialize(null); }
+
+		if (!Directory.Exists(Config.PathConfigDir)) { Directory.CreateDirectory(Config.PathConfigDir); }
+		if (!Directory.Exists(Config.PathTmpDir)) { Directory.CreateDirectory(Config.PathTmpDir); }
+		if (!Directory.Exists(Config.PathPinnedDir)) { Directory.CreateDirectory(Config.PathPinnedDir); }
+		if (!File.Exists(Config.PathTmpDir + "/entries") && File.Exists(Config.PathPinnedDir + "/entries")) { File.WriteAllText(Config.PathTmpDir + "/entries", File.ReadAllText(Config.PathPinnedDir + "/entries")); }
 
 		Stream stream;
 		List<byte> bytes;
@@ -145,7 +143,7 @@ public static class Program
 			case "-h":
 			case "--help":
 			case "help":
-				Console.WriteLine("Usage:\n\tcliphistory <command> [arguments...]");
+				Console.WriteLine("Usage:\n\tcliphistory <command> [arguments...] [options]");
 				Console.WriteLine("\nCommands:");
 				Console.WriteLine("\twindow                       Opens a gtk3 window to select an entry from history.");
 				Console.WriteLine("\tstore <type>                 Adds a new entry to history. Value is (text|image).");
@@ -153,9 +151,12 @@ public static class Program
 				Console.WriteLine("\tdelete <isImage> <IsPinned>  Deletes a clipboard entry. Values are (true|false).");
 				Console.WriteLine("\tclear                        Deletes all unpined clipboard entries.");
 				Console.WriteLine("\tclearall                     Deletes all (pined and unpined) clipboard entries.");
+				Console.WriteLine("\tdefaults                     Creates default configuration and style files.");
+				Console.WriteLine("\nOptions:");
+				Console.WriteLine("\t--config-dir <dir>           Directory which contains configuration and style files.");
 				break;
 			case "window":
-				Window.Run((File.Exists(Path.Tmp)) ? File.ReadAllText(Path.Tmp).Split('\n') : new string[] {}, DeconstructLine);
+				Window.Run((File.Exists(Config.PathTmpDir + "/entries")) ? File.ReadAllText(Config.PathTmpDir + "/entries").Split('\n') : new string[] {}, DeconstructLine);
 				break;
 			case "store":
 				if (args.Length != 2) { Console.WriteLine("Invalid arguments."); return 1; }
@@ -185,8 +186,11 @@ public static class Program
 				Clear();
 				break;
 			case "clearall":
-				Directory.GetFiles(Path.TmpDir, "*").ToList().ForEach(x => File.Delete(x));
-				Directory.GetFiles(Path.PinnedDir, "*").ToList().ForEach(x => File.Delete(x));
+				Directory.GetFiles(Config.PathTmpDir, "*").ToList().ForEach(x => File.Delete(x));
+				Directory.GetFiles(Config.PathPinnedDir, "*").ToList().ForEach(x => File.Delete(x));
+				break;
+			case "defaults":
+				Config.CreateDefaults();
 				break;
 			default:
 				Console.WriteLine("Unrecognized command.");

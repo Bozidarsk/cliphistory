@@ -10,7 +10,7 @@ public static class Window
 		Application.Init();
 
 		CssProvider provider = new CssProvider();
-		provider.LoadFromData(System.IO.File.ReadAllText(Path.Css));
+		provider.LoadFromData(Config.Css);
 		StyleContext.AddProviderForScreen(Gdk.Screen.Default, provider, 800);
 
 		VBox box = new VBox();
@@ -39,7 +39,7 @@ public static class Window
 		window.KeepAbove = true;
 		window.TypeHint = Gdk.WindowTypeHint.Menu;
 		window.FocusOutEvent += (object sender, FocusOutEventArgs e) => { Application.Quit(); };
-		window.SetDefaultSize(400, 450);
+		window.SetDefaultSize(Config.WindowWidth, Config.WindowHeight);
 		window.Add(scroll);
 		window.ShowAll();
 
